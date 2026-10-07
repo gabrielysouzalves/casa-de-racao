@@ -1,0 +1,24 @@
+﻿import { DatabaseSync } from 'node:sqlite';
+import { readFileSync,readdirSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');
+for(const file of readdirSync('drizzle').filter(f=>f.endsWith('.sql')).sort())db.exec(readFileSync('drizzle/'+file,'utf8'));
+db.prepare('INSERT INTO products(id,name,barcode,price,minimum) VALUES(?,?,?,?,?)').run('p1','Ração 10 kg','001234567890',12990,5);
+db.prepare('INSERT INTO products(id,name,barcode,price,minimum) VALUES(?,?,?,?,?)').run('p2','Ração 20 kg','002234567890',22990,5);
+const move=db.prepare('INSERT INTO movements(id,product_id,name,kind,quantity,price,date,sale_id,note) VALUES(?,?,?,?,?,?,?,?,?)');
+move.run('m1','p1','Ração 10 kg','in',10,12990,'2026-10-07',null,'Compra');
+assert.equal(db.prepare('SELECT quantity FROM products WHERE id=?').get('p1').quantity,10);
+move.run('m2','p1','Ração 10 kg','sale',-3,12990,'2026-10-07','sale1','');
+assert.equal(db.prepare('SELECT quantity FROM products WHERE id=?').get('p1').quantity,7);
+assert.throws(()=>move.run('m3','p1','Ração 10 kg','out',-8,12990,'2026-10-07',null,''),/stock_nonnegative/);
+assert.equal(db.prepare('SELECT count(*) AS n FROM movements').get().n,2);
+db.exec('BEGIN');try{move.run('m4','p1','Ração 10 kg','sale',-1,12990,'2026-10-07','sale2','');move.run('m5','p2','Ração 20 kg','sale',-1,22990,'2026-10-07','sale2','');assert.fail('Venda sem saldo deve falhar');}catch(e){db.exec('ROLLBACK');assert.match(String(e),/stock_nonnegative/);}
+assert.equal(db.prepare('SELECT quantity FROM products WHERE id=?').get('p1').quantity,7);
+assert.equal(db.prepare('SELECT count(*) AS n FROM movements').get().n,2);
+assert.throws(()=>db.prepare('INSERT INTO products(id,name,barcode,price) VALUES(?,?,?,?)').run('p3','Duplicado','001234567890',100),/UNIQUE/);
+db.prepare('UPDATE products SET price=20000,name=? WHERE id=?').run('Novo nome','p1');
+assert.equal(db.prepare('SELECT price FROM movements WHERE id=?').get('m2').price,12990);
+assert.equal(db.prepare('SELECT barcode FROM products WHERE id=?').get('p1').barcode,'001234567890');
+db.prepare('INSERT INTO bills(id,kind,name,company,mei,date,amount,paid) VALUES(?,?,?,?,?,?,?,?)').run('b1','expense','Compra','Fornecedor LTDA','MEI Loja','2026-10-07',25980,0);
+db.prepare('UPDATE bills SET paid=1 WHERE id=?').run('b1');assert.equal(db.prepare('SELECT paid FROM bills WHERE id=?').get('b1').paid,1);
+console.log('OK: entrada, saída, venda, estoque insuficiente, rollback integral, código único, zeros iniciais, preço histórico e pagamento.');
