@@ -7,3 +7,5 @@ O leitor USB físico deve ser configurado como teclado com Enter e testado com o
 Verificações concluídas: TypeScript sem erros e testes das regras de negócio aprovados (node scripts/verify-business.mjs).
 
 Compilação concluída. Testes da API com banco D1 local aprovados: cadastro, validação, entrada, venda, saldo insuficiente, código duplicado, compra MEI e pagamento. Página inicial respondeu HTTP 200. Registros de teste foram removidos do banco local.
+
+Autenticação própria verificada no D1 local: consultas e alterações anônimas bloqueadas; origem externa rejeitada; senha temporária exige troca; funcionário não gerencia usuários; bloqueio, redefinição, troca de senha e saída revogam sessões; limite de tentativas testado. As operações de estoque, vendas e pagamentos passaram usando a sessão de um funcionário.
