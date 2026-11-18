@@ -13,6 +13,16 @@ import {
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 type OrderStatus = 'AGUARDANDO' | 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'CANCELADO';
 type OrderType = 'PRESENCIAL' | 'ENTREGA';
@@ -85,6 +95,53 @@ export default function App() {
   const [loading, setLoading] = useState(false);
 
   const base = server.trim().replace(/\/$/, '');
+
+  useEffect(() => {
+    if (!token) return;
+    async function prepareNotifications() {
+      try {
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('pedidos', {
+            name: 'Atendimentos',
+            importance: Notifications.AndroidImportance.HIGH,
+          });
+        }
+        const permission = await Notifications.getPermissionsAsync();
+        if (!permission.granted && permission.canAskAgain) {
+          await Notifications.requestPermissionsAsync();
+        }
+      } catch (error) {
+        console.warn('Não foi possível configurar as notificações.', error);
+      }
+    }
+    void prepareNotifications();
+  }, [token]);
+
+  async function notifyOrder(method: 'POST' | 'PATCH', payload: object) {
+    try {
+      const permission = await Notifications.getPermissionsAsync();
+      if (!permission.granted) return;
+      const status = 'status' in payload ? String(payload.status) : '';
+      const type = 'type' in payload ? String(payload.type) : '';
+      const descriptions: Record<OrderStatus, string> = {
+        AGUARDANDO: 'aguardando atendimento',
+        EM_ATENDIMENTO: 'em atendimento',
+        CONCLUIDO: 'concluído',
+        CANCELADO: 'cancelado',
+      };
+      const body = method === 'POST'
+        ? `Novo pedido ${type === 'ENTREGA' ? 'de entrega' : 'presencial'} cadastrado.`
+        : `Pedido ${descriptions[status as OrderStatus] ?? 'atualizado'}.`;
+      await Notifications.scheduleNotificationAsync({
+        content: { title: 'Casa de Ração', body },
+        trigger: Platform.OS === 'android'
+          ? { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 1, channelId: 'pedidos' }
+          : null,
+      });
+    } catch (error) {
+      console.warn('Não foi possível enviar a notificação.', error);
+    }
+  }
 
   const request = useCallback(async (
     path: string,
@@ -163,6 +220,7 @@ export default function App() {
     try {
       await request('/api/orders', method, payload, token);
       await loadOrders(token);
+      await notifyOrder(method, payload);
     } catch (error) {
       Alert.alert('Pedido', (error as Error).message);
     } finally {
