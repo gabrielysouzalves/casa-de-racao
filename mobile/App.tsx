@@ -38,6 +38,13 @@ const labels: Record<OrderStatus, string> = {
   CANCELADO: 'Cancelado',
 };
 
+const statusColors: Record<OrderStatus, { backgroundColor: string; color: string }> = {
+  AGUARDANDO: { backgroundColor: '#fff0cf', color: '#946200' },
+  EM_ATENDIMENTO: { backgroundColor: '#dbeafe', color: '#1d4ed8' },
+  CONCLUIDO: { backgroundColor: '#dff5e9', color: '#166534' },
+  CANCELADO: { backgroundColor: '#fee2e2', color: '#b91c1c' },
+};
+
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'short',
@@ -191,7 +198,7 @@ export default function App() {
       <View key={order.id} style={styles.order}>
         <View style={styles.row}>
           <Text style={styles.orderTitle}>{order.type === 'ENTREGA' ? 'Entrega' : 'Presencial'} · {order.id.slice(0, 8)}</Text>
-          <Text style={styles.badge}>{labels[order.status]}</Text>
+          <Text style={[styles.badge, statusColors[order.status]]}>{labels[order.status]}</Text>
         </View>
         <Text style={styles.detail}>{formatDate(order.createdAt)}</Text>
         <View style={styles.actions}>
