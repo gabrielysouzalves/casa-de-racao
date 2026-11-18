@@ -14,7 +14,7 @@ import {
   DeliveryOrderFactory,
 } from '@/lib/orders/OrderFactory';
 import { orderManager } from '@/lib/orders/OrderManager';
-import type { Order, OrderStatus } from '@/lib/orders/types';
+import type { Order } from '@/lib/orders/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -127,35 +127,22 @@ export async function PATCH(request: Request) {
     await requireUser(request);
     const data = updateSchema.parse(await request.json());
 
-    const transitions: Record<
-      'EM_ATENDIMENTO' | 'CONCLUIDO' | 'CANCELADO',
-      { previous: OrderStatus[]; dateColumn: string }
-    > = {
-      EM_ATENDIMENTO: {
-        previous: ['AGUARDANDO'],
-        dateColumn: 'iniciado_em',
-      },
-      CONCLUIDO: {
-        previous: ['EM_ATENDIMENTO'],
-        dateColumn: 'concluido_em',
-      },
-      CANCELADO: {
-        previous: ['AGUARDANDO', 'EM_ATENDIMENTO'],
-        dateColumn: 'cancelado_em',
-      },
-    };
-
-    const transition = transitions[data.status];
+    const previousStatuses = orderManager.getPreviousStatuses(data.status);
+    const dateColumns = {
+      EM_ATENDIMENTO: 'iniciado_em',
+      CONCLUIDO: 'concluido_em',
+      CANCELADO: 'cancelado_em',
+    } as const;
     const db = database();
     const [result] = await db.execute<ResultSetHeader>(
       `UPDATE pedidos
-       SET status = ?, ${transition.dateColumn} = ?
-       WHERE pedido_cod = ? AND status IN (${transition.previous.map(() => '?').join(', ')})`,
+       SET status = ?, ${dateColumns[data.status]} = ?
+       WHERE pedido_cod = ? AND status IN (${previousStatuses.map(() => '?').join(', ')})`,
       [
         data.status,
         mysqlDate(new Date()),
         data.id,
-        ...transition.previous,
+        ...previousStatuses,
       ]
     );
     if (result.affectedRows === 0) {
