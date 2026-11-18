@@ -53,12 +53,19 @@ export const privateJson = (
   });
 
 export function ensureOrigin(request: Request) {
+  const bearer = request.headers.get("authorization");
+  if (bearer && /^Bearer [a-f0-9]{64}$/.test(bearer)) return;
   if (request.headers.get("origin") !== new URL(request.url).origin) {
     throw new AuthError("Requisição não autorizada", 403);
   }
 }
 
 export function sessionToken(request: Request) {
+  const bearer = request.headers.get("authorization");
+  if (bearer && /^Bearer [a-f0-9]{64}$/.test(bearer)) {
+    return bearer.slice(7);
+  }
+
   return (
     request.headers
       .get("cookie")
@@ -123,7 +130,7 @@ export function cookie(
   }`;
 }
 
-export async function createSession(userId: string, request: Request) {
+export async function createSessionToken(userId: string) {
   const token = Array.from(
     crypto.getRandomValues(new Uint8Array(32)),
     (b) => b.toString(16).padStart(2, "0")
@@ -141,7 +148,11 @@ export async function createSession(userId: string, request: Request) {
     [await digest(token), userId, Date.now() + 8 * 60 * 60 * 1000]
   );
 
-  return cookie(request, token);
+  return token;
+}
+
+export async function createSession(userId: string, request: Request) {
+  return cookie(request, await createSessionToken(userId));
 }
 
 export async function authFailure(e: unknown, request?: Request) {
