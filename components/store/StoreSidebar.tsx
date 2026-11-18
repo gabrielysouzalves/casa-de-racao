@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Package,
   Barcode,
+  ClipboardList,
   Wallet,
   Building2,
   Users,
@@ -36,6 +37,7 @@ const nav = [
   { id: 'dashboard', label: 'Visão geral', icon: LayoutDashboard },
   { id: 'stock', label: 'Estoque', icon: Package },
   { id: 'sales', label: 'Vendas', icon: Barcode },
+  { id: 'orders', label: 'Pedidos', icon: ClipboardList },
   { id: 'payments', label: 'Contas a pagar', icon: Wallet },
   { id: 'mei', label: 'Gastos por MEI', icon: Building2 },
 ];
