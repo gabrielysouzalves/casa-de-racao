@@ -14,7 +14,7 @@ import {
   DeliveryOrderFactory,
 } from '@/lib/orders/OrderFactory';
 import { orderManager } from '@/lib/orders/OrderManager';
-import type { Order } from '@/lib/orders/types';
+import type { Order, OrderStatus } from '@/lib/orders/types';
 
 export const dynamic = 'force-dynamic';
 
