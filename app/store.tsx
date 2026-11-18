@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Package,
   Barcode,
+  ClipboardList,
   Wallet,
   Building2,
   Plus,
@@ -26,6 +27,7 @@ import SalesView from '@/components/store/SalesView';
 import FinancialView from '@/components/store/FinancialView';
 import DashboardView from '@/components/store/DashboardView';
 import StoreDialog from '@/components/store/StoreDialog';
+import OrdersView from '@/components/store/OrdersView';
 
 type Product = {
   id: string;
@@ -77,6 +79,7 @@ const nav = [
   { id: 'dashboard', label: 'Visão geral', icon: LayoutDashboard },
   { id: 'stock', label: 'Estoque', icon: Package },
   { id: 'sales', label: 'Vendas', icon: Barcode },
+  { id: 'orders', label: 'Pedidos', icon: ClipboardList },
   { id: 'payments', label: 'Contas a pagar', icon: Wallet },
   { id: 'mei', label: 'Gastos por MEI', icon: Building2 },
 ];
@@ -503,6 +506,8 @@ export default function Store({
                     ? 'Produtos, quantidades e movimentações.'
                     : view === 'sales'
                       ? 'Seu balcão de vendas, pronto para o leitor.'
+                      : view === 'orders'
+                        ? 'Acompanhe a fila, as entregas e os atendimentos.'
                       : view === 'payments'
                         ? 'Duplicatas e vencimentos organizados.'
                         : view === 'users'
@@ -584,6 +589,10 @@ export default function Store({
                   onNavigate={setView}
                   onOpenMovement={() => open('movement')}
                 />
+              )}
+
+              {view === 'orders' && (
+                <OrdersView onSessionExpired={onSessionExpired} />
               )}
 
               {view === 'stock' && (
