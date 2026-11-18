@@ -33,7 +33,12 @@ const password = z
 
 const schema = z.discriminatedUnion("action", [
   z.object({
-    action: z.enum(["login", "mobileLogin"]),
+    action: z.literal("login"),
+    username,
+    password: z.string().min(1).max(128),
+  }),
+  z.object({
+    action: z.literal("mobileLogin"),
     username,
     password: z.string().min(1).max(128),
   }),
