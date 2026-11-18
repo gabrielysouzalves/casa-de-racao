@@ -22,6 +22,10 @@ const createSchema = z.object({
   type: z.enum(['PRESENCIAL', 'ENTREGA']),
 });
 
+const listSchema = z.object({
+  status: z.enum(['AGUARDANDO', 'EM_ATENDIMENTO', 'CONCLUIDO', 'CANCELADO']).optional(),
+});
+
 const updateSchema = z.object({
   id: z.string().uuid(),
   status: z.enum(['EM_ATENDIMENTO', 'CONCLUIDO', 'CANCELADO']),
@@ -74,8 +78,12 @@ export async function GET(request: Request) {
   try {
     await requireUser(request);
     const db = database();
+    const { status } = listSchema.parse({
+      status: new URL(request.url).searchParams.get('status') || undefined,
+    });
     const [rows] = await db.execute<OrderRow[]>(
-      `${selectOrders} ORDER BY criado_em DESC`
+      `${selectOrders}${status ? ' WHERE status = ?' : ''} ORDER BY criado_em ${status === 'AGUARDANDO' ? 'ASC' : 'DESC'}`,
+      status ? [status] : []
     );
     return privateJson({ orders: rows.map(mapOrder) });
   } catch (error) {
@@ -121,18 +129,18 @@ export async function PATCH(request: Request) {
 
     const transitions: Record<
       'EM_ATENDIMENTO' | 'CONCLUIDO' | 'CANCELADO',
-      { previous: OrderStatus; dateColumn: string }
+      { previous: OrderStatus[]; dateColumn: string }
     > = {
       EM_ATENDIMENTO: {
-        previous: 'AGUARDANDO',
+        previous: ['AGUARDANDO'],
         dateColumn: 'iniciado_em',
       },
       CONCLUIDO: {
-        previous: 'EM_ATENDIMENTO',
+        previous: ['EM_ATENDIMENTO'],
         dateColumn: 'concluido_em',
       },
       CANCELADO: {
-        previous: 'AGUARDANDO',
+        previous: ['AGUARDANDO', 'EM_ATENDIMENTO'],
         dateColumn: 'cancelado_em',
       },
     };
@@ -142,12 +150,12 @@ export async function PATCH(request: Request) {
     const [result] = await db.execute<ResultSetHeader>(
       `UPDATE pedidos
        SET status = ?, ${transition.dateColumn} = ?
-       WHERE pedido_cod = ? AND status = ?`,
+       WHERE pedido_cod = ? AND status IN (${transition.previous.map(() => '?').join(', ')})`,
       [
         data.status,
         mysqlDate(new Date()),
         data.id,
-        transition.previous,
+        ...transition.previous,
       ]
     );
     if (result.affectedRows === 0) {
