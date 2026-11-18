@@ -53,6 +53,7 @@ import { Toaster, toast } from 'sonner';
 import type { PublicUser } from '@/lib/auth';
 import UsersPanel from '@/components/users-panel';
 import StoreSidebar from '@/components/store/StoreSidebar';
+import StockView from '@/components/store/StockView';
 
 type Product = {
   id: string;
@@ -1040,6 +1041,7 @@ export default function Store({
 
                   <section className="panel">
                     <div className="panel-head">
+
                       <h2>Histórico de movimentações</h2>
                     </div>
 
