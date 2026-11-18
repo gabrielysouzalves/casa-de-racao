@@ -8,11 +8,8 @@ import {
   Wallet,
   Building2,
   Plus,
-  ShoppingCart,
-  Trash2,
   TrendingUp,
   AlertTriangle,
-  Check,
   Search,
   Users,
 } from 'lucide-react';
@@ -54,6 +51,7 @@ import type { PublicUser } from '@/lib/auth';
 import UsersPanel from '@/components/users-panel';
 import StoreSidebar from '@/components/store/StoreSidebar';
 import StockView from '@/components/store/StockView';
+import SalesView from '@/components/store/SalesView';
 
 type Product = {
   id: string;
@@ -967,261 +965,27 @@ export default function Store({
               )}
 
               {view === 'sales' && (
-                <>
-                  <div className="sales-layout">
-                    <section className="panel">
-                      <div className="panel-head">
-                        <h2>
-                          <Barcode size={21} />
-                          Adicionar produtos
-                        </h2>
-                      </div>
-
-                      <form
-                        onSubmit={readCode}
-                        className="scan-form"
-                      >
-                        <label htmlFor="barcode">
-                          Código de barras
-                        </label>
-
-                        <div>
-                          <input
-                            ref={scan}
-                            id="barcode"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            placeholder="Leia o código ou digite e pressione Enter"
-                            autoComplete="off"
-                          />
-
-                          <button
-                            className="primary"
-                            disabled={!code.trim()}
-                          >
-                            Adicionar
-                          </button>
-                        </div>
-
-                        <p>
-                          Configure o leitor para enviar Enter após cada
-                          leitura.
-                        </p>
-                      </form>
-
-                      <div className="search">
-                        <Search size={18} />
-
-                        <input
-                          aria-label="Buscar produto para vender"
-                          placeholder="Ou encontre pelo nome"
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="product-picker">
-                        {products.map((p) => (
-                          <button
-                            disabled={!p.quantity || busy}
-                            key={p.id}
-                            onClick={() => add(p)}
-                          >
-                            <span>
-                              <b>{p.name}</b>
-                              <small>
-                                {p.quantity} un. disponíveis
-                              </small>
-                            </span>
-
-                            <strong>{currency(p.price)}</strong>
-                            <Plus size={18} />
-                          </button>
-                        ))}
-
-                        {!products.length && (
-                          <Empty text="Cadastre produtos e registre uma entrada no estoque." />
-                        )}
-                      </div>
-                    </section>
-
-                    <section className="panel cart">
-                      <div className="panel-head">
-                        <h2>
-                          <ShoppingCart size={21} />
-                          Venda atual
-                        </h2>
-
-                        <span className="badge blue">
-                          {cart.reduce(
-                            (a, i) => a + i.quantity,
-                            0
-                          )}{' '}
-                          itens
-                        </span>
-                      </div>
-
-                      <label>
-                        Data da venda
-                        <input
-                          type="date"
-                          value={saleDate}
-                          onChange={(e) => setSaleDate(e.target.value)}
-                        />
-                      </label>
-
-                      {!cart.length ? (
-                        <Empty text="Leia um código para iniciar uma venda." />
-                      ) : (
-                        cart.map((i) => {
-                          const p = data.products.find(
-                            (p) => p.id === i.productId
-                          )!;
-
-                          return (
-                            <div
-                              className="cart-row"
-                              key={i.productId}
-                            >
-                              <div>
-                                <b>{p.name}</b>
-                                <small>
-                                  {currency(p.price)} / un.
-                                </small>
-                              </div>
-
-                              <input
-                                aria-label={`Quantidade de ${p.name}`}
-                                type="number"
-                                min="1"
-                                max={p.quantity}
-                                value={i.quantity}
-                                disabled={busy}
-                                onChange={(e) => {
-                                  const q = Number(e.target.value);
-
-                                  if (
-                                    Number.isInteger(q) &&
-                                    q > 0 &&
-                                    q <= p.quantity
-                                  ) {
-                                    setCart((c) =>
-                                      c.map((item) =>
-                                        item.productId === p.id
-                                          ? { ...item, quantity: q }
-                                          : item
-                                      )
-                                    );
-                                  }
-                                }}
-                              />
-
-                              <button
-                                disabled={busy}
-                                aria-label={`Remover ${p.name}`}
-                                onClick={() =>
-                                  setCart((c) =>
-                                    c.filter(
-                                      (item) =>
-                                        item.productId !== p.id
-                                    )
-                                  )
-                                }
-                              >
-                                <Trash2 size={17} />
-                              </button>
-                            </div>
-                          );
-                        })
-                      )}
-
-                      <div className="cart-bottom">
-                        <span>
-                          Total da venda
-                          <strong>{currency(cartTotal)}</strong>
-                        </span>
-
-                        <button
-                          className="primary"
-                          disabled={!cart.length || busy || !saleDate}
-                          onClick={async () => {
-                            if (
-                              await save({
-                                action: 'sale',
-                                date: saleDate,
-                                items: cart,
-                              })
-                            ) {
-                              setCart([]);
-                              scan.current?.focus();
-                            }
-                          }}
-                        >
-                          <Check size={18} />
-                          {busy ? 'Registrando…' : 'Finalizar venda'}
-                        </button>
-
-                        <p>
-                          A finalização atualiza o estoque automaticamente.
-                        </p>
-                      </div>
-                    </section>
-                  </div>
-
-                  <section className="panel">
-                    <div className="panel-head">
-                      <h2>Histórico de vendas</h2>
-
-                      <label className="month-label">
-                        Mês
-                        <input
-                          type="month"
-                          value={month}
-                          onChange={(e) => setMonth(e.target.value)}
-                        />
-                      </label>
-                    </div>
-
-                    {!monthly.length ? (
-                      <Empty text="Nenhuma venda registrada neste mês." />
-                    ) : (
-                      <GridTable
-                        heads={[
-                          'Data',
-                          'Venda',
-                          'Produto',
-                          'Quantidade',
-                          'Valor unitário',
-                          'Total',
-                        ]}
-                      >
-                        {monthly.map((m) => (
-                          <TableRow key={m.id}>
-                            <TableCell>{shortDate(m.date)}</TableCell>
-
-                            <TableCell className="code">
-                              {m.sale_id?.slice(0, 8)}
-                            </TableCell>
-
-                            <TableCell>{m.name}</TableCell>
-
-                            <TableCell>
-                              {Math.abs(m.quantity)}
-                            </TableCell>
-
-                            <TableCell>{currency(m.price)}</TableCell>
-
-                            <TableCell>
-                              {currency(
-                                Math.abs(m.quantity) * m.price
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </GridTable>
-                    )}
-                  </section>
-                </>
+                <SalesView
+                  products={products}
+                  allProducts={data.products}
+                  monthly={monthly}
+                  cart={cart}
+                  cartTotal={cartTotal}
+                  busy={busy}
+                  search={search}
+                  setSearch={setSearch}
+                  code={code}
+                  setCode={setCode}
+                  month={month}
+                  setMonth={setMonth}
+                  saleDate={saleDate}
+                  setSaleDate={setSaleDate}
+                  scan={scan}
+                  readCode={readCode}
+                  add={add}
+                  setCart={setCart}
+                  save={save}
+                />
               )}
 
               {['payments', 'mei'].includes(view) && (
