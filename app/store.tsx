@@ -52,6 +52,7 @@ import UsersPanel from '@/components/users-panel';
 import StoreSidebar from '@/components/store/StoreSidebar';
 import StockView from '@/components/store/StockView';
 import SalesView from '@/components/store/SalesView';
+import FinancialView from '@/components/store/FinancialView';
 
 type Product = {
   id: string;
@@ -541,13 +542,6 @@ export default function Store({
     )
   );
 
-  const filteredBills = data.bills.filter(
-    (b) =>
-      b.kind === (view === 'payments' ? 'payment' : 'expense') &&
-      b.date.startsWith(month) &&
-      (view !== 'mei' || mei === 'all' || b.mei === mei)
-  );
-
   const monthlyCount = new Set(
     monthly.map((m) => m.sale_id)
   ).size;
@@ -989,162 +983,21 @@ export default function Store({
               )}
 
               {['payments', 'mei'].includes(view) && (
-                <>
-                  <div className="metrics financial">
-                    <div className="metric">
-                      <span>Total no período</span>
-                      <strong>
-                        {currency(
-                          filteredBills.reduce(
-                            (a, b) => a + b.amount,
-                            0
-                          )
-                        )}
-                      </strong>
-                    </div>
-
-                    <div className="metric">
-                      <span>Pago</span>
-                      <strong>
-                        {currency(
-                          filteredBills
-                            .filter((b) => b.paid)
-                            .reduce((a, b) => a + b.amount, 0)
-                        )}
-                      </strong>
-                    </div>
-
-                    <div className="metric warning">
-                      <span>Em aberto</span>
-                      <strong>
-                        {currency(
-                          filteredBills
-                            .filter((b) => !b.paid)
-                            .reduce((a, b) => a + b.amount, 0)
-                        )}
-                      </strong>
-                    </div>
-                  </div>
-
-                  <section className="panel">
-                    <div className="panel-head">
-                      <h2>
-                        {view === 'payments'
-                          ? 'Duplicatas do mês'
-                          : 'Compras do mês'}
-                      </h2>
-
-                      {view === 'mei' && (
-                        <Choice
-                          label="Filtrar por MEI"
-                          value={mei}
-                          onChange={setMei}
-                          options={[
-                            {
-                              id: 'all',
-                              name: 'Todos os MEIs',
-                            },
-                            ...Array.from(
-                              new Set(
-                                data.bills
-                                  .filter(
-                                    (b) => b.kind === 'expense'
-                                  )
-                                  .map((b) => b.mei)
-                              )
-                            ).map((m) => ({
-                              id: m,
-                              name: m,
-                            })),
-                          ]}
-                        />
-                      )}
-                    </div>
-
-                    {!filteredBills.length ? (
-                      <Empty text="Nenhum registro neste período." />
-                    ) : (
-                      <GridTable
-                        heads={
-                          view === 'payments'
-                            ? [
-                                'Duplicata',
-                                'Vencimento',
-                                'Valor',
-                                'Situação',
-                                'Ação',
-                              ]
-                            : [
-                                'Compra',
-                                'Razão social',
-                                'MEI',
-                                'Data da compra',
-                                'Valor',
-                                'Situação',
-                                'Ação',
-                              ]
-                        }
-                      >
-                        {filteredBills.map((b) => (
-                          <TableRow key={b.id}>
-                            <TableCell className="product-name">
-                              {b.name}
-                            </TableCell>
-
-                            {view === 'mei' && (
-                              <>
-                                <TableCell>{b.company}</TableCell>
-                                <TableCell>{b.mei}</TableCell>
-                              </>
-                            )}
-
-                            <TableCell>{shortDate(b.date)}</TableCell>
-
-                            <TableCell>{currency(b.amount)}</TableCell>
-
-                            <TableCell>
-                              <span
-                                className={`badge ${
-                                  b.paid
-                                    ? 'green'
-                                    : b.kind === 'payment' &&
-                                        b.date < today()
-                                      ? 'red'
-                                      : 'amber'
-                                }`}
-                              >
-                                {b.paid
-                                  ? 'Pago'
-                                  : b.kind === 'payment' &&
-                                      b.date < today()
-                                    ? 'Vencido'
-                                    : 'Em aberto'}
-                              </span>
-                            </TableCell>
-
-                            <TableCell>
-                              <button
-                                className="text-button"
-                                disabled={busy}
-                                onClick={() =>
-                                  save({
-                                    action: 'paid',
-                                    id: b.id,
-                                    paid: !b.paid,
-                                  })
-                                }
-                              >
-                                {b.paid
-                                  ? 'Marcar em aberto'
-                                  : 'Marcar pago'}
-                              </button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </GridTable>
-                    )}
-                  </section>
-                </>
+                <FinancialView
+                  view={view as 'payments' | 'mei'}
+                  bills={data.bills}
+                  month={month}
+                  mei={mei}
+                  onMeiChange={setMei}
+                  busy={busy}
+                  onTogglePaid={(bill) => {
+                    void save({
+                      action: 'paid',
+                      id: bill.id,
+                      paid: !bill.paid,
+                    });
+                  }}
+                />
               )}
             </>
           )}
