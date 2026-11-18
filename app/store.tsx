@@ -17,23 +17,6 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-import { Checkbox } from '@/components/ui/checkbox';
 import { Toaster, toast } from 'sonner';
 import type { PublicUser } from '@/lib/auth';
 import UsersPanel from '@/components/users-panel';
@@ -42,6 +25,7 @@ import StockView from '@/components/store/StockView';
 import SalesView from '@/components/store/SalesView';
 import FinancialView from '@/components/store/FinancialView';
 import DashboardView from '@/components/store/DashboardView';
+import StoreDialog from '@/components/store/StoreDialog';
 
 type Product = {
   id: string;
@@ -96,34 +80,6 @@ const nav = [
   { id: 'payments', label: 'Contas a pagar', icon: Wallet },
   { id: 'mei', label: 'Gastos por MEI', icon: Building2 },
 ];
-
-function Choice({
-  value,
-  onChange,
-  options,
-  label,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { id: string; name: string }[];
-  label: string;
-}) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label={label} className="choice">
-        <SelectValue placeholder={label} />
-      </SelectTrigger>
-
-      <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o.id} value={o.id}>
-            {o.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
 
 export default function Store({
   user,
@@ -687,236 +643,22 @@ export default function Store({
         </main>
       </SidebarInset>
 
-      <Dialog
-        open={!!modal}
-        onOpenChange={(v) => {
-          if (!v && !busy) {
-            setModal('');
-          }
+      <StoreDialog
+        modal={modal}
+        edit={edit}
+        busy={busy}
+        selected={selected}
+        direction={direction}
+        formPaid={formPaid}
+        products={data.products}
+        onOpenChange={(isOpen) => {
+          if (!isOpen && !busy) setModal('');
         }}
-      >
-        <DialogContent className="store-dialog">
-          <DialogHeader>
-            <DialogTitle>
-              {modal === 'product'
-                ? edit
-                  ? 'Editar produto'
-                  : 'Novo produto'
-                : modal === 'movement'
-                  ? 'Movimentar estoque'
-                  : modal === 'payment'
-                    ? 'Nova duplicata'
-                    : 'Registrar gasto por MEI'}
-            </DialogTitle>
-
-            <DialogDescription>
-              {modal === 'product'
-                ? 'Após cadastrar, registre uma entrada para adicionar quantidades.'
-                : modal === 'movement'
-                  ? 'Entradas e saídas ficam salvas no histórico.'
-                  : 'Preencha os dados para acompanhar o pagamento.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={submit} className="form-grid">
-            {modal === 'product' ? (
-              <>
-                <label>
-                  Nome do produto
-                  <input
-                    name="name"
-                    required
-                    maxLength={180}
-                    defaultValue={edit?.name}
-                  />
-                </label>
-
-                <label>
-                  Código de barras
-                  <input
-                    name="barcode"
-                    maxLength={80}
-                    defaultValue={edit?.barcode || ''}
-                  />
-                </label>
-
-                <div className="two-fields">
-                  <label>
-                    Preço de venda (R$)
-                    <input
-                      name="price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      required
-                      defaultValue={
-                        edit ? edit.price / 100 : ''
-                      }
-                    />
-                  </label>
-
-                  <label>
-                    Estoque mínimo
-                    <input
-                      name="minimum"
-                      type="number"
-                      min="0"
-                      step="1"
-                      required
-                      defaultValue={edit?.minimum ?? 5}
-                    />
-                  </label>
-                </div>
-              </>
-            ) : modal === 'movement' ? (
-              <>
-                <label>
-                  Produto
-                  <Choice
-                    label="Selecione um produto"
-                    value={selected}
-                    onChange={setSelected}
-                    options={data.products.map((p) => ({
-                      id: p.id,
-                      name: p.name,
-                    }))}
-                  />
-                </label>
-
-                {!data.products.length && (
-                  <p>
-                    Cadastre um produto antes de movimentar o estoque.
-                  </p>
-                )}
-
-                <label>
-                  Movimento
-                  <Choice
-                    label="Movimento"
-                    value={direction}
-                    onChange={setDirection}
-                    options={[
-                      { id: 'in', name: 'Entrada' },
-                      { id: 'out', name: 'Saída' },
-                    ]}
-                  />
-                </label>
-
-                <div className="two-fields">
-                  <label>
-                    Quantidade
-                    <input
-                      name="quantity"
-                      type="number"
-                      required
-                      min="1"
-                      step="1"
-                    />
-                  </label>
-
-                  <label>
-                    Data
-                    <input
-                      name="date"
-                      type="date"
-                      required
-                      defaultValue={today()}
-                    />
-                  </label>
-                </div>
-
-                <label>
-                  Observação
-                  <input
-                    name="note"
-                    maxLength={180}
-                    placeholder="Ex.: compra de fornecedor, perda ou ajuste"
-                  />
-                </label>
-              </>
-            ) : (
-              <>
-                <label>
-                  {modal === 'payment'
-                    ? 'Nome da duplicata'
-                    : 'Descrição da compra'}
-
-                  <input
-                    name="name"
-                    required
-                    maxLength={180}
-                  />
-                </label>
-
-                {modal === 'expense' && (
-                  <>
-                    <label>
-                      Razão social
-                      <input
-                        name="company"
-                        required
-                        maxLength={180}
-                      />
-                    </label>
-
-                    <label>
-                      Nome do MEI
-                      <input
-                        name="mei"
-                        required
-                        maxLength={180}
-                      />
-                    </label>
-                  </>
-                )}
-
-                <div className="two-fields">
-                  <label>
-                    {modal === 'payment'
-                      ? 'Data de vencimento'
-                      : 'Data da compra'}
-
-                    <input
-                      name="date"
-                      type="date"
-                      required
-                      defaultValue={today()}
-                    />
-                  </label>
-
-                  <label>
-                    Valor (R$)
-                    <input
-                      name="amount"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      required
-                    />
-                  </label>
-                </div>
-
-                <label className="checkbox-label">
-                  <Checkbox
-                    checked={formPaid}
-                    onCheckedChange={(v) =>
-                      setFormPaid(v === true)
-                    }
-                  />
-                  Já foi pago
-                </label>
-              </>
-            )}
-
-            <button
-              className="primary"
-              disabled={busy || (modal === 'movement' && !selected)}
-            >
-              {busy ? 'Salvando…' : 'Salvar registro'}
-            </button>
-          </form>
-        </DialogContent>
-      </Dialog>
+        onSubmit={submit}
+        setSelected={setSelected}
+        setDirection={setDirection}
+        setFormPaid={setFormPaid}
+      />
     </SidebarProvider>
   );
 }
