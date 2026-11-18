@@ -956,139 +956,14 @@ export default function Store({
               )}
 
               {view === 'stock' && (
-                <>
-                  <section className="panel">
-                    <div className="panel-head">
-                      <div className="search">
-                        <Search size={18} />
-
-                        <input
-                          aria-label="Buscar produto ou código"
-                          placeholder="Buscar produto ou código de barras"
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                        />
-                      </div>
-
-                      <button
-                        className="secondary"
-                        onClick={() => open('movement')}
-                      >
-                        Entrada / saída
-                      </button>
-                    </div>
-
-                    {!products.length ? (
-                      <Empty
-                        text={
-                          search
-                            ? 'Nenhum produto encontrado.'
-                            : 'Cadastre o primeiro produto para começar.'
-                        }
-                      />
-                    ) : (
-                      <GridTable
-                        heads={[
-                          'Produto',
-                          'Código de barras',
-                          'Preço de venda',
-                          'Quantidade',
-                          'Situação',
-                          '',
-                        ]}
-                      >
-                        {products.map((p) => (
-                          <TableRow key={p.id}>
-                            <TableCell className="product-name">
-                              {p.name}
-                            </TableCell>
-
-                            <TableCell className="code">
-                              {p.barcode || 'Sem código'}
-                            </TableCell>
-
-                            <TableCell>{currency(p.price)}</TableCell>
-
-                            <TableCell>{p.quantity} un.</TableCell>
-
-                            <TableCell>
-                              <span
-                                className={`badge ${
-                                  p.quantity <= p.minimum
-                                    ? 'amber'
-                                    : 'green'
-                                }`}
-                              >
-                                {p.quantity <= p.minimum
-                                  ? 'Estoque baixo'
-                                  : 'Disponível'}
-                              </span>
-                            </TableCell>
-
-                            <TableCell>
-                              <button
-                                className="text-button"
-                                onClick={() => open('product', p)}
-                              >
-                                Editar
-                              </button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </GridTable>
-                    )}
-                  </section>
-
-                  <section className="panel">
-                    <div className="panel-head">
-
-                      <h2>Histórico de movimentações</h2>
-                    </div>
-
-                    {!data.movements.length ? (
-                      <Empty text="As entradas e saídas serão registradas aqui." />
-                    ) : (
-                      <GridTable
-                        heads={[
-                          'Data',
-                          'Produto',
-                          'Movimento',
-                          'Quantidade',
-                          'Observação',
-                        ]}
-                      >
-                        {data.movements.map((m) => (
-                          <TableRow key={m.id}>
-                            <TableCell>{shortDate(m.date)}</TableCell>
-
-                            <TableCell>{m.name}</TableCell>
-
-                            <TableCell>
-                              <span
-                                className={`badge ${
-                                  m.kind === 'in' ? 'green' : 'blue'
-                                }`}
-                              >
-                                {m.kind === 'in'
-                                  ? 'Entrada'
-                                  : m.kind === 'sale'
-                                    ? 'Venda'
-                                    : 'Saída'}
-                              </span>
-                            </TableCell>
-
-                            <TableCell>
-                              {m.quantity > 0 ? '+' : ''}
-                              {m.quantity}
-                            </TableCell>
-
-                            <TableCell>{m.note || '—'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </GridTable>
-                    )}
-                  </section>
-                </>
+                <StockView
+                  products={products}
+                  movements={data.movements}
+                  search={search}
+                  onSearchChange={setSearch}
+                  onOpenMovement={() => open('movement')}
+                  onEditProduct={(product) => open('product', product)}
+                />
               )}
 
               {view === 'sales' && (
