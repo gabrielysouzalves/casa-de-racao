@@ -12,6 +12,7 @@ import {
   sessionToken,
   cookie,
   createSession,
+  createSessionToken,
   ensureOrigin,
   privateJson,
   AuthError,
@@ -32,7 +33,7 @@ const password = z
 
 const schema = z.discriminatedUnion("action", [
   z.object({
-    action: z.literal("login"),
+    action: z.enum(["login", "mobileLogin"]),
     username,
     password: z.string().min(1).max(128),
   }),
@@ -146,9 +147,15 @@ async function createInitialAdmin(
 
 export async function POST(request: Request) {
   try {
-    ensureOrigin(request);
-
+    const origin = request.headers.get("origin");
     const v = schema.parse(await request.json());
+    if (v.action === "mobileLogin") {
+      if (origin && origin !== new URL(request.url).origin) {
+        throw new AuthError("Requisição não autorizada", 403);
+      }
+    } else {
+      ensureOrigin(request);
+    }
     const db = database();
 
     if (v.action === "logout") {
@@ -177,7 +184,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (v.action === "login") {
+    if (v.action === "login" || v.action === "mobileLogin") {
       await rateLimit(request, v.username);
 
       const [users] = await db.execute<UserRow[]>(
@@ -243,6 +250,13 @@ export async function POST(request: Request) {
         "DELETE FROM limites_login WHERE chave = ?",
         [await digest("user:" + v.username)]
       );
+
+      if (v.action === "mobileLogin") {
+        return privateJson({
+          user: publicUser(user),
+          token: await createSessionToken(user.id),
+        });
+      }
 
       return privateJson(
         { user: publicUser(user) },
