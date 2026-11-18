@@ -8,7 +8,6 @@ import {
   Wallet,
   Building2,
   Plus,
-  Leaf,
   ShoppingCart,
   Trash2,
   TrendingUp,
@@ -16,19 +15,10 @@ import {
   Check,
   Search,
   Users,
-  LogOut,
-  KeyRound,
 } from 'lucide-react';
 
 import {
   SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
 } from '@/components/ui/sidebar';
@@ -62,6 +52,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Toaster, toast } from 'sonner';
 import type { PublicUser } from '@/lib/auth';
 import UsersPanel from '@/components/users-panel';
+import StoreSidebar from '@/components/store/StoreSidebar';
 
 type Product = {
   id: string;
@@ -566,77 +557,17 @@ export default function Store({
     <SidebarProvider>
       <Toaster richColors position="top-right" />
 
-      <Sidebar className="store-sidebar">
-        <SidebarHeader>
-          <div className="brand">
-            <span>
-              <Leaf size={26} />
-            </span>
+      <StoreSidebar
+          user={user}
+          view={view}
+          onNavigate={(selectedView) => {
+            setView(selectedView);
+            setSearch('');
+          }}
+          onLogout={onLogout}
+          onPasswordChange={onPasswordChange}
+        />
 
-            <div>
-              Casa de Ração
-              <small>GESTÃO DA LOJA</small>
-            </div>
-          </div>
-        </SidebarHeader>
-
-        <SidebarContent>
-          <p className="nav-caption">OPERAÇÃO</p>
-
-          <SidebarMenu>
-            {menus.map((n) => (
-              <SidebarMenuItem key={n.id}>
-                <SidebarMenuButton
-                  isActive={view === n.id}
-                  onClick={() => {
-                    setView(n.id);
-                    setSearch('');
-                  }}
-                  className="nav-button"
-                >
-                  <n.icon size={20} />
-                  <span>{n.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-
-          <div className="sidebar-tip">
-            <Barcode size={25} />
-            <b>Pronto para o balcão</b>
-            <p>
-              Use o leitor USB no campo de código de barras das vendas.
-            </p>
-          </div>
-        </SidebarContent>
-
-        <SidebarFooter>
-          <div className="footer-store">
-            <div className="store-avatar">CR</div>
-
-            <div>
-              {user.name}
-              <small>
-                {user.role === 'admin'
-                  ? 'Administrador'
-                  : 'Funcionário'}
-              </small>
-            </div>
-          </div>
-
-          <div className="account-actions">
-            <button onClick={onPasswordChange}>
-              <KeyRound size={16} />
-              Trocar senha
-            </button>
-
-            <button onClick={onLogout}>
-              <LogOut size={16} />
-              Sair
-            </button>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
 
       <SidebarInset className="workspace">
         <header className="topbar">
