@@ -119,8 +119,20 @@ export default function App() {
 
   async function notifyOrder(method: 'POST' | 'PATCH', payload: object) {
     try {
-      const permission = await Notifications.getPermissionsAsync();
-      if (!permission.granted) return;
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('pedidos', {
+          name: 'Atendimentos',
+          importance: Notifications.AndroidImportance.HIGH,
+        });
+      }
+      let permission = await Notifications.getPermissionsAsync();
+      if (!permission.granted && permission.canAskAgain) {
+        permission = await Notifications.requestPermissionsAsync();
+      }
+      if (!permission.granted) {
+        Alert.alert('Notificações desativadas', 'Autorize as notificações do Expo Go nas configurações do celular.');
+        return;
+      }
       const status = 'status' in payload ? String(payload.status) : '';
       const type = 'type' in payload ? String(payload.type) : '';
       const descriptions: Record<OrderStatus, string> = {
@@ -133,12 +145,15 @@ export default function App() {
         ? `Novo pedido ${type === 'ENTREGA' ? 'de entrega' : 'presencial'} cadastrado.`
         : `Pedido ${descriptions[status as OrderStatus] ?? 'atualizado'}.`;
       await Notifications.scheduleNotificationAsync({
-        content: { title: 'Casa de Ração', body },
-        trigger: Platform.OS === 'android'
-          ? { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 1, channelId: 'pedidos' }
-          : null,
+        content: {
+          title: 'Casa de Ração',
+          body,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        },
+        trigger: null,
       });
     } catch (error) {
+      Alert.alert('Erro na notificação', (error as Error).message);
       console.warn('Não foi possível enviar a notificação.', error);
     }
   }
