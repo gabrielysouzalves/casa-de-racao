@@ -1,4 +1,4 @@
-import type { Order } from './types';
+import type { Order, OrderStatus } from './types';
 
 export class OrderManager {
   private static instance: OrderManager;
@@ -11,6 +11,17 @@ export class OrderManager {
     }
 
     return OrderManager.instance;
+  }
+
+  public getPreviousStatuses(status: 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'CANCELADO'): OrderStatus[] {
+    switch (status) {
+      case 'EM_ATENDIMENTO':
+        return ['AGUARDANDO'];
+      case 'CONCLUIDO':
+        return ['EM_ATENDIMENTO'];
+      case 'CANCELADO':
+        return ['AGUARDANDO', 'EM_ATENDIMENTO'];
+    }
   }
 
   public createOrder(order: Order): Order {
