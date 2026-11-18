@@ -119,18 +119,12 @@ export default function App() {
 
   async function notifyOrder(method: 'POST' | 'PATCH', payload: object) {
     try {
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('pedidos', {
-          name: 'Atendimentos',
-          importance: Notifications.AndroidImportance.HIGH,
-        });
-      }
       let permission = await Notifications.getPermissionsAsync();
       if (!permission.granted && permission.canAskAgain) {
         permission = await Notifications.requestPermissionsAsync();
       }
       if (!permission.granted) {
-        Alert.alert('Notificações desativadas', 'Autorize as notificações do Expo Go nas configurações do celular.');
+        Alert.alert('Aviso de atendimento', 'Pedido atualizado. As notificações do Expo Go estão desativadas.');
         return;
       }
       const status = 'status' in payload ? String(payload.status) : '';
@@ -144,17 +138,22 @@ export default function App() {
       const body = method === 'POST'
         ? `Novo pedido ${type === 'ENTREGA' ? 'de entrega' : 'presencial'} cadastrado.`
         : `Pedido ${descriptions[status as OrderStatus] ?? 'atualizado'}.`;
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Casa de Ração',
-          body,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-        },
-        trigger: null,
-      });
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Casa de Ração',
+            body,
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+          },
+          trigger: null,
+        });
+      } catch (error) {
+        console.warn('Notificação do sistema indisponível.', error);
+        Alert.alert('Casa de Ração', body);
+      }
     } catch (error) {
-      Alert.alert('Erro na notificação', (error as Error).message);
-      console.warn('Não foi possível enviar a notificação.', error);
+      console.warn('Não foi possível preparar o aviso.', error);
+      Alert.alert('Casa de Ração', 'Pedido atualizado com sucesso.');
     }
   }
 
