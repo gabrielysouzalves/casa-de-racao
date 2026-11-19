@@ -187,7 +187,7 @@ export default function Home() {
 
       <label>
         Nova senha
-        # Uso do componente PasswordInput para permitir alternar a visibilidade da senha
+        {/* Uso do componente PasswordInput para permitir alternar a visibilidade da senha */}
         <PasswordInput
           name="newPassword"
           required
@@ -200,7 +200,7 @@ export default function Home() {
 
       <label>
         Confirmar nova senha
-        # Uso do componente PasswordInput para permitir alternar a visibilidade da senha
+        {/* Uso do componente PasswordInput para permitir alternar a visibilidade da senha */}
         <PasswordInput
           name="confirm"
           required
@@ -284,7 +284,7 @@ export default function Home() {
 
               <label>
                 Senha
-                # Uso do componente PasswordInput para permitir alternar a visibilidade da senha
+                {/* Uso do componente PasswordInput para permitir alternar a visibilidade da senha */}
                 <PasswordInput
                   name="password"
                   required
