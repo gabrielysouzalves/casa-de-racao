@@ -10,6 +10,9 @@
     },
     "ios": {
       "bundleIdentifier": "br.com.casaderacao.mobile"
-    }
+    },
+    "plugins": [
+      "expo-status-bar"
+    ]
   }
 }
