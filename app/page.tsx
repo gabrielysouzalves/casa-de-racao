@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import type { PublicUser } from '@/lib/auth';
 import Store from './store';
+import PasswordInput from '@/components/ui/password-input';
 
 export default function Home() {
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -186,9 +187,9 @@ export default function Home() {
 
       <label>
         Nova senha
-        <input
+        # Uso do componente PasswordInput para permitir alternar a visibilidade da senha
+        <PasswordInput
           name="newPassword"
-          type="password"
           required
           minLength={6}
           maxLength={128}
@@ -199,9 +200,9 @@ export default function Home() {
 
       <label>
         Confirmar nova senha
-        <input
+        # Uso do componente PasswordInput para permitir alternar a visibilidade da senha
+        <PasswordInput
           name="confirm"
-          type="password"
           required
           minLength={6}
           maxLength={128}
@@ -283,9 +284,9 @@ export default function Home() {
 
               <label>
                 Senha
-                <input
+                # Uso do componente PasswordInput para permitir alternar a visibilidade da senha
+                <PasswordInput
                   name="password"
-                  type="password"
                   required
                   maxLength={128}
                   autoComplete="current-password"
@@ -345,3 +346,4 @@ export default function Home() {
     </>
   );
 }
+
