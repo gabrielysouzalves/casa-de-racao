@@ -1,59 +1,90 @@
 # 🐾 Sistema de Gerenciamento para Casa de Rações
 
-## 📌 Sobre o projeto
+Projeto interdisciplinar de Análise e Desenvolvimento de Sistemas, desenvolvido para apoiar a rotina de uma casa de rações. A solução combina painel web, API REST, banco MySQL e aplicativo Android para atendimento de pedidos.
 
-O **Sistema de Gerenciamento para Casa de Rações** é uma aplicação web desenvolvida para auxiliar no controle e na organização das atividades de estabelecimentos que comercializam rações, alimentos e produtos para animais.
+## Funcionalidades
 
-O sistema tem como objetivo facilitar a administração do estabelecimento, centralizando informações importantes em um único ambiente e tornando o gerenciamento mais prático, organizado e eficiente.
+**Painel web**
+- Cadastro e consulta de produtos, estoque e movimentações.
+- Vendas, contas a pagar e gastos por MEI.
+- Gerenciamento de usuários e autenticação.
+- Pedidos presenciais e entregas, com fila e acompanhamento de status.
+- Consulta de indicadores operacionais e estatísticas de atendimento via API.
 
-Por meio da plataforma, é possível acompanhar os produtos cadastrados, controlar o estoque, registrar movimentações e administrar informações financeiras e de usuários.
+**Aplicativo mobile**
+- Login dos funcionários.
+- Cadastro, consulta e atualização dos pedidos.
+- Fila de espera e histórico recente.
+- Avisos locais de operações nos pedidos.
 
-## ⚙️ Funcionalidades
+O aplicativo mobile tem escopo operacional reduzido; estoque e financeiro ficam no painel web.
 
-- **Cadastro e gerenciamento de produtos:** permite cadastrar, consultar, editar e organizar os produtos disponíveis na loja.
-- **Controle de estoque:** facilita o acompanhamento da quantidade de produtos disponíveis.
-- **Movimentações de estoque:** permite registrar entradas e saídas de produtos, auxiliando no controle das alterações do estoque.
-- **Gerenciamento de usuários:** possibilita administrar os usuários do sistema e seus respectivos perfis de acesso.
-- **Controle de contas a pagar:** permite organizar e acompanhar os compromissos financeiros do estabelecimento.
-- **Autenticação e segurança:** possui sistema de login e controle de sessões para restringir o acesso às funcionalidades.
-- **Painel de gerenciamento:** reúne recursos administrativos para facilitar o acompanhamento das informações da loja.
+## Tecnologias
 
-## 🎯 Para que serve?
+- **Web e API:** React, TypeScript, Vinext/Vite, Node.js.
+- **Mobile:** React Native, Expo, TypeScript, Expo Notifications.
+- **Banco:** MySQL.
+- **Padrões:** Factory Method para tipos de pedido e Singleton para regras de atendimento.
 
-O sistema foi desenvolvido para ajudar proprietários e funcionários de casas de rações a manterem o controle das operações do estabelecimento.
+## Execução local
 
-Com ele, é possível:
+Requisitos: Node.js 22.13 ou superior, npm, MySQL e Git.
 
-- Organizar os produtos comercializados.
-- Acompanhar a disponibilidade de mercadorias.
-- Controlar entradas e saídas do estoque.
-- Gerenciar os acessos dos funcionários.
-- Acompanhar contas a pagar.
-- Reduzir a dependência de controles manuais e planilhas separadas.
+1. Instale as dependências na raiz com `npm install`.
+2. Configure o MySQL e aplique `db/schema_mysql_casa_de_racao.sql`, seguido de `db/schema_pedidos.sql`.
+3. Crie um arquivo `.env` na raiz com as variáveis necessárias:
 
-A proposta é oferecer uma ferramenta que contribua para uma administração mais organizada e para a eficiência das atividades diárias da loja.
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=usuario_do_banco
+DB_PASSWORD=senha_do_banco
+DB_NAME=casa_de_racao
+AUTH_PEPPER=segredo_longo_e_aleatorio
+INITIAL_ADMIN_HASH=hash_scrypt_do_administrador
+```
 
-## 🛠️ Tecnologias utilizadas
+O valor de `AUTH_PEPPER` precisa ter pelo menos 32 caracteres. `INITIAL_ADMIN_HASH` deve conter o hash scrypt usado na inicialização do primeiro administrador. Não envie o arquivo `.env` ao GitHub e não use os valores acima como credenciais reais.
 
-- Node.js
-- TypeScript
-- React
-- MySQL
-- Vite / Vinext
+4. Compile e inicie o servidor:
 
-## 💻 Ambiente de desenvolvimento
+```bash
+npm run build
+npm start
+```
 
-Para executar o projeto localmente, são necessários:
+O painel estará disponível no endereço informado pelo terminal (normalmente `http://localhost:3000`). Use `npx tsc --noEmit` para verificar os tipos.
 
-- Node.js 22 ou superior.
-- MySQL 8 ou compatível.
-- npm.
-- Git.
+### Aplicativo mobile
 
-## 🚀 Objetivo do projeto
+Com o backend em execução, em outro terminal:
 
-Desenvolver uma aplicação web para atender às necessidades de gerenciamento de uma casa de rações, aplicando conceitos de desenvolvimento full-stack, integração com banco de dados, autenticação e organização de informações.
+```bash
+cd mobile
+npm install
+npx expo install --fix
+npx expo start
+```
+
+Abra o QR Code pelo Expo Go. O celular e o computador precisam estar na mesma rede para os testes locais. Na tela de login do aplicativo, informe o IP do computador e a porta do backend. **Não utilize autenticação via HTTP em redes públicas; para uso fora do ambiente de desenvolvimento, configure HTTPS.**
+
+Consulte também [instruções específicas do aplicativo](mobile/README.md).
+
+## API, estrutura e documentação
+
+A autenticação web é feita por sessão em cookie; o aplicativo utiliza token de sessão. A API de pedidos mantém regras de transição de status e grava os horários para cálculo dos indicadores.
+
+- [Documentação da API de pedidos e estatísticas](docs/api-pedidos.md)
+- [Estrutura SQL principal](db/schema_mysql_casa_de_racao.sql)
+- [Estrutura SQL dos pedidos](db/schema_pedidos.sql)
+
+Os controles de pedidos tratam o **atendimento**; não substituem o registro de vendas e itens do estoque.
+
+## Entrega e validação
+
+Foram realizados testes manuais de criação, início, conclusão e cancelamento de pedidos, acesso pelo aplicativo mobile e sincronização com o sistema web.
+
+Para a entrega do PI, a equipe ainda deve reunir evidências do uso com o estabelecimento, registrar o feedback recebido e revisar a documentação final e a apresentação.
 
 ---
-
-**Projeto desenvolvido com foco na organização e no gerenciamento de estabelecimentos do segmento pet.** 🐶🐱
+Projeto desenvolvido para aplicação prática dos conteúdos de Padrões de Projeto, Estatística Aplicada, Desenvolvimento de Dispositivos Móveis e Programação de Scripts.
