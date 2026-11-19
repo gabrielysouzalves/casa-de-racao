@@ -14,6 +14,7 @@ export default function PasswordInput(props: Props) {
       <button
         type="button"
         className="password-toggle"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? 'Esconder senha' : 'Mostrar senha'}
         aria-pressed={visible}
