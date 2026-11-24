@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ClipboardList, RefreshCw, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import OrdersStatisticsPanel from './OrdersStatisticsPanel';
 import type { Order, OrderStatus, OrderType } from '@/lib/orders/types';
 import {
   Table,
@@ -46,6 +47,7 @@ export default function OrdersView({ onSessionExpired }: OrdersViewProps) {
   const [filter, setFilter] = useState<OrderStatus | 'TODOS'>('TODOS');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [statisticsRefresh, setStatisticsRefresh] = useState(0);
 
   const loadOrders = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -92,6 +94,7 @@ export default function OrdersView({ onSessionExpired }: OrdersViewProps) {
       if (!response.ok) throw new Error(result.error || 'Não foi possível salvar o pedido.');
       toast.success(method === 'POST' ? 'Pedido criado com sucesso.' : 'Pedido atualizado.');
       await loadOrders();
+      setStatisticsRefresh((current) => current + 1);
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -214,6 +217,7 @@ export default function OrdersView({ onSessionExpired }: OrdersViewProps) {
           </Table>
         )}
       </section>
+      <OrdersStatisticsPanel refreshKey={statisticsRefresh} onSessionExpired={onSessionExpired} />
     </>
   );
 }
