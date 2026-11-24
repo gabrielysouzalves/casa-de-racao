@@ -25,9 +25,13 @@ export default defineConfig(async ({ command }) => {
   if (!managedLinux) {
     return {
       server,
+      ssr: {
+        external: ["mysql2"],
+      },
       plugins: [vinext()],
     };
   }
+
 
   // Configuração Cloudflare preservada para o ambiente managed-linux.
   process.env.CLOUDFLARE_CF_FETCH_ENABLED ??= "false";
