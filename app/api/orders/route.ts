@@ -1,20 +1,8 @@
-import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { z } from 'zod';
-
 import {
-  requireUser,
-  ensureOrigin,
-  AuthError,
-  authFailure,
-  privateJson,
+  requireUser, ensureOrigin, AuthError, authFailure, privateJson,
 } from '@/lib/auth';
-import { database } from '@/lib/db';
-import {
-  InStoreOrderFactory,
-  DeliveryOrderFactory,
-} from '@/lib/orders/OrderFactory';
-import { orderManager } from '@/lib/orders/OrderManager';
-import type { Order, OrderStatus } from '@/lib/orders/types';
+import { orderService, OrderTransitionError } from '@/lib/orders/OrderService';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,61 +19,13 @@ const updateSchema = z.object({
   status: z.enum(['EM_ATENDIMENTO', 'CONCLUIDO', 'CANCELADO']),
 });
 
-interface OrderRow extends RowDataPacket {
-  id: string;
-  type: Order['type'];
-  status: OrderStatus;
-  createdAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  cancelledAt: string | null;
-}
-
-function mysqlDate(date: Date): string {
-  return date.toISOString().slice(0, 23).replace('T', ' ');
-}
-
-function toISO(value: string | null): string | null {
-  if (!value) return null;
-  return value.replace(' ', 'T') + 'Z';
-}
-
-function mapOrder(row: OrderRow): Order {
-  return {
-    id: row.id,
-    type: row.type,
-    status: row.status,
-    createdAt: toISO(row.createdAt)!,
-    startedAt: toISO(row.startedAt),
-    completedAt: toISO(row.completedAt),
-    cancelledAt: toISO(row.cancelledAt),
-  };
-}
-
-const selectOrders = `
-  SELECT
-    pedido_cod AS id,
-    tipo AS type,
-    status,
-    criado_em AS createdAt,
-    iniciado_em AS startedAt,
-    concluido_em AS completedAt,
-    cancelado_em AS cancelledAt
-  FROM pedidos
-`;
-
 export async function GET(request: Request) {
   try {
     await requireUser(request);
-    const db = database();
     const { status } = listSchema.parse({
       status: new URL(request.url).searchParams.get('status') || undefined,
     });
-    const [rows] = await db.execute<OrderRow[]>(
-      `${selectOrders}${status ? ' WHERE status = ?' : ''} ORDER BY criado_em ${status === 'AGUARDANDO' ? 'ASC' : 'DESC'}`,
-      status ? [status] : []
-    );
-    return privateJson({ orders: rows.map(mapOrder) });
+    return privateJson({ orders: await orderService.list(status) });
   } catch (error) {
     return handleError(error, request);
   }
@@ -95,27 +35,9 @@ export async function POST(request: Request) {
   try {
     ensureOrigin(request);
     await requireUser(request);
-    const data = createSchema.parse(await request.json());
-    const factory = data.type === 'PRESENCIAL'
-      ? new InStoreOrderFactory()
-      : new DeliveryOrderFactory();
-    const newOrder = orderManager.createOrder(factory.createOrder());
-    const db = database();
-    await db.execute(
-      `INSERT INTO pedidos
-        (pedido_cod, tipo, status, criado_em)
-       VALUES (?, ?, ?, ?)`,
-      [
-        newOrder.id,
-        newOrder.type,
-        newOrder.status,
-        mysqlDate(new Date(newOrder.createdAt)),
-      ]
-    );
-    return privateJson(
-      { message: 'Pedido criado com sucesso.', order: newOrder },
-      201
-    );
+    const { type } = createSchema.parse(await request.json());
+    const order = await orderService.create(type);
+    return privateJson({ message: 'Pedido criado com sucesso.', order }, 201);
   } catch (error) {
     return handleError(error, request);
   }
@@ -125,43 +47,9 @@ export async function PATCH(request: Request) {
   try {
     ensureOrigin(request);
     await requireUser(request);
-    const data = updateSchema.parse(await request.json());
-
-    const previousStatuses = orderManager.getPreviousStatuses(data.status);
-    const dateColumns = {
-      EM_ATENDIMENTO: 'iniciado_em',
-      CONCLUIDO: 'concluido_em',
-      CANCELADO: 'cancelado_em',
-    } as const;
-    const db = database();
-    const [result] = await db.execute<ResultSetHeader>(
-      `UPDATE pedidos
-       SET status = ?, ${dateColumns[data.status]} = ?
-       WHERE pedido_cod = ? AND status IN (${previousStatuses.map(() => '?').join(', ')})`,
-      [
-        data.status,
-        mysqlDate(new Date()),
-        data.id,
-        ...previousStatuses,
-      ]
-    );
-    if (result.affectedRows === 0) {
-      return privateJson(
-        { error: 'Pedido não encontrado ou mudança de status não permitida.' },
-        409
-      );
-    }
-    const [rows] = await db.execute<OrderRow[]>(
-      `${selectOrders} WHERE pedido_cod = ?`,
-      [data.id]
-    );
-    const order = mapOrder(rows[0]);
-    return privateJson({
-      message: 'Status atualizado com sucesso.',
-      order,
-      waitingTime: orderManager.calculateWaitingTime(order),
-      serviceTime: orderManager.calculateServiceTime(order),
-    });
+    const { id, status } = updateSchema.parse(await request.json());
+    const result = await orderService.changeStatus(id, status);
+    return privateJson({ message: 'Status atualizado com sucesso.', ...result });
   } catch (error) {
     return handleError(error, request);
   }
@@ -171,6 +59,9 @@ function handleError(error: unknown, request: Request) {
   if (error instanceof AuthError) return authFailure(error, request);
   if (error instanceof z.ZodError) {
     return privateJson({ error: 'Dados inválidos. Confira os campos.' }, 400);
+  }
+  if (error instanceof OrderTransitionError) {
+    return privateJson({ error: error.message }, 409);
   }
   console.error('Erro na API de pedidos:', error);
   return privateJson({ error: 'Não foi possível processar o pedido.' }, 500);
