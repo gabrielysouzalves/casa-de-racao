@@ -80,6 +80,43 @@ A autenticação web é feita por sessão em cookie; o aplicativo utiliza token 
 
 Os controles de pedidos tratam o **atendimento**; não substituem o registro de vendas e itens do estoque.
 
+## Arquitetura e organização
+
+O painel web em `app/` e `components/store/` e o aplicativo em `mobile/` consomem a API REST em `app/api/`.
+
+- **View:** componentes React e interface React Native.
+- **Controller:** rotas HTTP em `app/api/`, responsáveis pela validação das entradas, autenticação e respostas.
+- **Service:** `lib/services/` e `lib/orders/OrderService.ts`, responsáveis pelas operações de negócio.
+- **Repository:** `lib/orders/OrderRepository.ts`, responsável pelo acesso à tabela MySQL de pedidos. Os demais serviços ainda realizam consultas SQL diretamente.
+- **Model:** modelos de pedidos, tipos e validações em `lib/orders/` e nos esquemas Zod.
+- **Padrões:** Factory Method para criação de pedidos e Singleton no gerenciamento de regras dos pedidos.
+
+A organização é inspirada no MVC, com separação adicional de serviços e persistência; não equivale a um MVC clássico em todos os módulos.
+
+## Operação e segurança
+
+As vendas registram itens e baixas de estoque de maneira transacional. Os valores monetários são armazenados em centavos; entradas, saídas e vendas preservam o histórico. O leitor de código de barras USB pode operar como teclado com Enter, mas a compatibilidade com o equipamento real precisa ser validada.
+
+Somente administradores gerenciam usuários. A aplicação exige a troca da senha temporária, utiliza hashes scrypt com sal e segredo do servidor e invalida sessões após logout, redefinição e troca de senha. Tokens não devem ser inseridos em documentação nem no repositório.
+
+## Testes e conferência das estatísticas
+
+As estatísticas são calculadas no backend a partir dos registros MySQL. Há testes automatizados de cálculos em `tests/order-statistics.test.mjs` e `tests/order-statistics-extended.test.mjs`:
+
+```bash
+npx tsc --noEmit
+npm run build
+node --experimental-strip-types --test tests/order-statistics*.test.mjs
+```
+
+No banco **exclusivamente de desenvolvimento**, `db/seed_pedidos_teste.sql` insere 24 pedidos fictícios e apresenta consultas estatísticas. O script `db/verificar_estatisticas_pedidos.sql` é somente de leitura e compara esses registros com valores esperados:
+
+```bash
+mysql -u root -p casa_de_racao < db/verificar_estatisticas_pedidos.sql
+```
+
+O endpoint `/api/orders/statistics` inclui **todos os pedidos** do banco; os scripts SQL de conferência filtram somente os identificadores de teste. Testes legados em `scripts/verify-*.mjs`, envolvendo D1/SQLite, não comprovam o funcionamento da aplicação atual em MySQL.
+
 ## Entrega e validação
 
 Foram realizados testes manuais de criação, início, conclusão e cancelamento de pedidos, acesso pelo aplicativo mobile e sincronização com o sistema web.
