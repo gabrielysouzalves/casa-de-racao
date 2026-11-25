@@ -55,9 +55,6 @@ export default function OrdersStatisticsPanel({ refreshKey, onSessionExpired }: 
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    setError('');
-
     async function load() {
       try {
         const response = await fetch('/api/orders/statistics', {
@@ -72,7 +69,10 @@ export default function OrdersStatisticsPanel({ refreshKey, onSessionExpired }: 
         if (!response.ok) {
           throw new Error(result.error || 'Não foi possível consultar as estatísticas.');
         }
-        if (!controller.signal.aborted) setStats(result);
+        if (!controller.signal.aborted) {
+          setStats(result);
+          setError('');
+        }
       } catch (reason) {
         if (!controller.signal.aborted) {
           setError(reason instanceof Error ? reason.message : 'Erro ao carregar estatísticas.');
