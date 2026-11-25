@@ -72,10 +72,12 @@ Cada indicador inclui `count`, `mean`, `median`, `minimum`, `maximum`, `variance
 - **Factory Method:** `lib/orders/OrderFactory.ts` possui fábricas para pedidos presenciais e entregas.
 - **Singleton:** `lib/orders/OrderManager.ts` oferece uma instância compartilhada para regras de status e cálculos de duração.
 - **Estatística:** `lib/orders/OrderStatistics.ts` concentra os cálculos, separados das rotas.
-- **Controllers/rotas:** `app/api/orders/route.ts` e `app/api/orders/statistics/route.ts` validam requisições, exigem autenticação e acessam o MySQL.
+- **Controllers/rotas:** `app/api/orders/route.ts` e `app/api/orders/statistics/route.ts` validam requisições, exigem autenticação e delegam operações ao serviço.
+- **Service:** `lib/orders/OrderService.ts` coordena criação, transições de status e cálculo das estatísticas.
+- **Repository:** `lib/orders/OrderRepository.ts` centraliza as consultas e atualizações da tabela `pedidos` no MySQL.
 - **Interfaces:** `components/store/OrdersView.tsx` no painel web e `mobile/App.tsx` no Android.
 
-A aplicação usa uma **separação em camadas inspirada no MVC**: interfaces, rotas/controladores, regras de negócio e persistência. Não é uma implementação de MVC clássico em todas as partes.
+A aplicação usa uma **separação em camadas inspirada no MVC**: interfaces, rotas/controladores, serviços de negócio e repositório de persistência. Não é uma implementação de MVC clássico em todas as partes.
 
 ## Testes realizados em 18/11/2026
 
@@ -95,3 +97,14 @@ Os testes demonstram os cenários executados, mas não substituem testes automat
 - Notificações são locais, geradas após ações feitas no próprio aplicativo. Não há notificações push entre dispositivos.
 - O servidor MySQL precisa estar configurado antes de executar as rotas.
 - As evidências de uso com a loja (prints, fotos e feedback) devem ser registradas separadamente, conforme o roteiro do PI.
+
+## Validação das estatísticas no MySQL
+
+Para inserir os 24 pedidos fictícios (somente no banco de desenvolvimento), execute `db/seed_pedidos_teste.sql`. Para conferir separadamente contagens, tempos médios, variância populacional e desvio-padrão, execute `db/verificar_estatisticas_pedidos.sql`. O segundo arquivo é apenas de leitura e compara os resultados com os valores esperados da massa original.
+
+```bash
+mysql -u root -p casa_de_racao < db/verificar_estatisticas_pedidos.sql
+node --experimental-strip-types --test tests/order-statistics*.test.mjs
+```
+
+A API usa todos os pedidos cadastrados, enquanto o SQL de conferência filtra apenas os identificadores reservados para testes. As estatísticas serão diferentes quando houver outros registros no banco.
