@@ -196,7 +196,11 @@ export default function App() {
   }, [request]);
 
   useEffect(() => {
-    if (token) void loadOrders(token);
+    if (!token) return;
+    const timer = setTimeout(() => {
+      void loadOrders(token);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [token, loadOrders]);
 
   async function login() {

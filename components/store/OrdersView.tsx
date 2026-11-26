@@ -73,8 +73,13 @@ export default function OrdersView({ onSessionExpired }: OrdersViewProps) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadOrders(controller.signal);
-    return () => controller.abort();
+    const timer = setTimeout(() => {
+      if (!controller.signal.aborted) void loadOrders(controller.signal);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [loadOrders]);
 
   async function changeOrder(method: 'POST' | 'PATCH', payload: { type: OrderType } | { id: string; status: OrderStatus }) {
