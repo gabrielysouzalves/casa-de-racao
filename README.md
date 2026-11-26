@@ -28,32 +28,62 @@ O aplicativo mobile tem escopo operacional reduzido; estoque e financeiro ficam 
 
 ## Execução local
 
-Requisitos: Node.js 22.13 ou superior, npm, MySQL e Git.
+Requisitos: Node.js 22.13 ou superior (recomendado Node.js 24), npm, MySQL 8 e Git.
 
-1. Instale as dependências na raiz com `npm install`.
-2. Configure o MySQL e aplique `db/schema_mysql_casa_de_racao.sql`, seguido de `db/schema_pedidos.sql`.
-3. Crie um arquivo `.env` na raiz com as variáveis necessárias:
+A aplicação usa **MySQL instalado no computador**. A tela web pode abrir sem que o banco esteja configurado, mas o login, o estoque e os pedidos dependem da conexão com o MySQL.
 
-```dotenv
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=usuario_do_banco
-DB_PASSWORD=senha_do_banco
-DB_NAME=casa_de_racao
-AUTH_PEPPER=segredo_longo_e_aleatorio
-INITIAL_ADMIN_HASH=hash_scrypt_do_administrador
+### Preparação do banco de dados
+
+1. Instale o MySQL Server e confirme que o serviço está iniciado. Anote o usuário e a senha configurados durante a instalação. O MySQL Workbench é opcional, mas facilita a execução dos scripts no Windows.
+2. Abra o MySQL Workbench, conecte-se ao servidor local e use **File → Open SQL Script** para executar, nesta ordem:
+   - `db/schema_mysql_casa_de_racao.sql`
+   - `db/schema_pedidos.sql`
+3. Em cada arquivo, clique no comando de execução do script inteiro (ícone de raio). O primeiro script cria o banco `casa_de_racao` e seleciona esse banco com `USE`; o segundo cria a tabela `pedidos`. Antes de executar o segundo arquivo, selecione `casa_de_racao` como schema padrão no Workbench, ou acrescente `USE casa_de_racao;` no início da consulta aberta.
+
+Alternativa no terminal **cmd.exe** do Windows (o executável `mysql` precisa estar no PATH), na pasta raiz do repositório:
+
+```bat
+mysql -u root -p < db\schema_mysql_casa_de_racao.sql
+mysql -u root -p casa_de_racao < db\schema_pedidos.sql
 ```
 
-O valor de `AUTH_PEPPER` precisa ter pelo menos 32 caracteres. `INITIAL_ADMIN_HASH` deve conter o hash scrypt usado na inicialização do primeiro administrador. Não envie o arquivo `.env` ao GitHub e não use os valores acima como credenciais reais.
+No PowerShell, prefira o Workbench: o redirecionamento `<` desses comandos é próprio do cmd.exe, não do PowerShell.
 
-4. Compile e inicie o servidor:
+### Configuração local da aplicação
 
-```bash
+Na pasta raiz, instale as dependências e copie o exemplo:
+
+```powershell
+npm install
+Copy-Item .env.example .env
+```
+
+No Linux ou macOS, use `cp .env.example .env`.
+
+Edite o arquivo `.env` e informe `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` e `DB_NAME` conforme a sua instalação do MySQL. O valor padrão de `DB_NAME` é `casa_de_racao`. Configure também um `AUTH_PEPPER` aleatório de pelo menos 32 caracteres. O arquivo `.env` é privado e **não deve ser commitado nem compartilhado**.
+
+Para preparar a senha inicial do usuário `admin`, com o `AUTH_PEPPER` já configurado:
+
+```powershell
+node --experimental-strip-types scripts/set-initial-admin-password.mjs
+```
+
+O script pede uma senha temporária, gera um hash scrypt e preenche `INITIAL_ADMIN_HASH` no `.env`. Ao entrar com `admin` pela primeira vez, altere a senha. O script só inicializa o primeiro administrador quando a tabela de usuários está vazia; não redefine uma conta já existente.
+
+### Iniciar o painel web
+
+```powershell
 npm run build
 npm start
 ```
 
-O painel estará disponível no endereço informado pelo terminal (normalmente `http://localhost:3000`). Use `npx tsc --noEmit` para verificar os tipos.
+Abra **http://localhost:3000/** no navegador. Para desenvolvimento, pode utilizar `npm run dev`, que usa **http://localhost:5173/**.
+
+O terminal do Vite permanece aberto enquanto a aplicação está em execução. A mensagem `[vite] (client) [optimizer] bundling dependencies...` é uma etapa de preparação, não um erro por si só. Abra a URL `Local` indicada no terminal e confirme se a página aparece. Na primeira execução, a otimização pode levar algum tempo.
+
+Se a página abrir mas o login não funcionar, confirme primeiro: serviço MySQL iniciado, dois scripts SQL executados, credenciais `DB_*` corretas no `.env`, `AUTH_PEPPER` e `INITIAL_ADMIN_HASH` preenchidos. Nunca envie senhas, tokens ou o arquivo `.env` em mensagens ou capturas de tela.
+
+Para verificar os tipos, execute `npx tsc --noEmit`.
 
 ### Aplicativo mobile
 
