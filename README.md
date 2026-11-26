@@ -81,6 +81,16 @@ npx expo start
 
 Abra o QR Code no **Expo Go**. O celular e o computador devem estar na mesma rede. No aplicativo, informe o IP do computador e a porta do servidor. Mais detalhes em [mobile/README.md](mobile/README.md).
 
+## 👥 Integrantes
+
+- Fernanda de Paula Biano
+- Jennifer N. Mendonça
+- Samuel B. Damaceno
+- Rick Sander G. Nascimento
+- Igor de Castro Q. Regatieri
+- Maria Gabriela M. de Souza
+- Gabriely Souza Alves de Oliveira
+
 ---
 
 Projeto interdisciplinar desenvolvido para aplicar conhecimentos de desenvolvimento de sistemas, padrões de projeto, estatística e dispositivos móveis.
