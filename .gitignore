@@ -47,3 +47,6 @@ next-env.d.ts
 /outputs/
 /work/
 /backup-original-d1/
+
+# Configuração antiga de hospedagem, não utilizada no projeto local
+/.openai/
